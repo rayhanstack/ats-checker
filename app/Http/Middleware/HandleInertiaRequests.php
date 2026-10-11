@@ -56,6 +56,10 @@ class HandleInertiaRequests extends Middleware
                 'site_name' => SettingsService::get('site_name', 'ATS Checker'),
                 'site_tagline' => SettingsService::get('site_tagline', 'AI-Powered Resume Optimization & ATS Scoring'),
                 'logo_path' => SettingsService::get('logo_path'),
+                'contact_email' => SettingsService::get('contact_email', 'support@atschecker.local'),
+                'contact_phone' => SettingsService::get('contact_phone', '+1 (555) 019-2834'),
+                'contact_address' => SettingsService::get('contact_address', '100 Innovation Way, Suite 400, San Francisco, CA'),
+                'social_links' => SettingsService::get('social_links', []),
                 'trial_days' => (int) SettingsService::get('trial_days', 7),
             ],
         ];
