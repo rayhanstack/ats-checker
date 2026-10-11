@@ -29,6 +29,8 @@ class AppServiceProvider extends ServiceProvider
     {
         Vite::prefetch(concurrency: 3);
 
+        \Illuminate\Support\Facades\Gate::policy(\App\Models\Analysis::class, \App\Policies\AnalysisPolicy::class);
+
         \Illuminate\Support\Facades\RateLimiter::for('analyses', function (\Illuminate\Http\Request $request) {
             $limit = (int) \App\Services\SettingsService::get('analysis_throttle_per_hour', 10);
 

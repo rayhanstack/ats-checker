@@ -103,6 +103,7 @@ class AccessService
             $limit = $plan ? ($plan->analyses_limit ?? 50) : 50;
             $used = $user->analyses()
                 ->where('created_at', '>=', $subscription->starts_at)
+                ->where('status', 'completed')
                 ->count();
 
             return max(0, $limit - $used);
@@ -111,7 +112,7 @@ class AccessService
         // Check active trial
         if ($this->isTrialActive($user)) {
             $limit = $this->getTrialLimit();
-            $used = $user->analyses()->count();
+            $used = $user->analyses()->where('status', 'completed')->count();
 
             return max(0, $limit - $used);
         }
@@ -200,9 +201,10 @@ class AccessService
         if ($subscription && $subscription->isActive()) {
             $usedCount = $user->analyses()
                 ->where('created_at', '>=', $subscription->starts_at)
+                ->where('status', 'completed')
                 ->count();
         } else {
-            $usedCount = $user->analyses()->count();
+            $usedCount = $user->analyses()->where('status', 'completed')->count();
         }
 
         $usagePercentage = 100;

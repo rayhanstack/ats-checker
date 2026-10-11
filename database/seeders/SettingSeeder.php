@@ -83,6 +83,11 @@ class SettingSeeder extends Seeder
                 'group' => 'analysis',
             ],
             [
+                'key' => 'allow_basic_fallback',
+                'value' => true,
+                'group' => 'analysis',
+            ],
+            [
                 'key' => 'resume_retention_days',
                 'value' => 30,
                 'group' => 'retention',

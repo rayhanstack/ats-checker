@@ -310,6 +310,41 @@ test('submissions are throttled per user after reaching limit', function () {
 });
 
 test('ProcessAnalysisJob updates analysis status to completed', function () {
+    \Illuminate\Support\Facades\Http::fake([
+        'https://api.anthropic.com/v1/messages' => \Illuminate\Support\Facades\Http::response([
+            'id' => 'msg_123',
+            'type' => 'message',
+            'role' => 'assistant',
+            'content' => [
+                [
+                    'type' => 'tool_use',
+                    'id' => 'toolu_123',
+                    'name' => 'report_ats_result',
+                    'input' => [
+                        'score' => 85,
+                        'breakdown' => [
+                            'skills_match' => ['score' => 85, 'note' => 'Good match'],
+                            'experience_relevance' => ['score' => 80, 'note' => 'Relevant'],
+                            'keywords' => ['score' => 90, 'note' => 'Keywords match'],
+                            'format_readability' => ['score' => 85, 'note' => 'Readable'],
+                        ],
+                        'matched_keywords' => ['PHP', 'Engineer'],
+                        'missing_keywords' => [],
+                        'strengths' => ['Strong experience'],
+                        'suggestions' => [],
+                        'summary' => 'Great resume',
+                    ],
+                ],
+            ],
+            'usage' => [
+                'input_tokens' => 200,
+                'output_tokens' => 100,
+            ],
+        ]),
+    ]);
+
+    $this->seed(\Database\Seeders\AiModelSeeder::class);
+
     $user = User::factory()->create();
 
     $analysis = Analysis::create([
@@ -323,7 +358,7 @@ test('ProcessAnalysisJob updates analysis status to completed', function () {
     ]);
 
     $job = new ProcessAnalysisJob($analysis);
-    $job->handle(app(ResumeTextExtractor::class));
+    $job->handle(app(\App\Services\AnalysisService::class), app(ResumeTextExtractor::class));
 
     $analysis->refresh();
     expect($analysis->status)->toBe('completed');

@@ -41,4 +41,10 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', env('APP_URL', 'http://localhost:8000') . '/auth/google/callback'),
     ],
 
+    'anthropic' => [
+        'key' => env('ANTHROPIC_API_KEY'),
+        'url' => env('ANTHROPIC_BASE_URL', 'https://api.anthropic.com/v1'),
+        'version' => env('ANTHROPIC_VERSION', '2023-06-01'),
+    ],
+
 ];

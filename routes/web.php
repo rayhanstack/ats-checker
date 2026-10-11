@@ -71,6 +71,9 @@ Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'ind
 Route::middleware('auth')->group(function () {
     Route::get('/analyses', [\App\Http\Controllers\AnalysisController::class, 'index'])->name('analyses.index');
     Route::get('/analyses/{analysis}', [\App\Http\Controllers\AnalysisController::class, 'show'])->name('analyses.show');
+    Route::post('/analyses/{analysis}/rerun', [\App\Http\Controllers\AnalysisController::class, 'rerun'])->name('analyses.rerun');
+    Route::post('/analyses/{analysis}/retry', [\App\Http\Controllers\AnalysisController::class, 'retry'])->name('analyses.retry');
+    Route::get('/analyses/{analysis}/print', [\App\Http\Controllers\AnalysisController::class, 'print'])->name('analyses.print');
     Route::delete('/analyses/{analysis}', [\App\Http\Controllers\AnalysisController::class, 'destroy'])->name('analyses.destroy');
 
     // Billing & Subscriptions

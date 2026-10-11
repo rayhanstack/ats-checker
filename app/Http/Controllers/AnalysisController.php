@@ -86,8 +86,48 @@ class AnalysisController extends Controller
      */
     public function show(Request $request, Analysis $analysis): Response
     {
-        if ($analysis->user_id !== $request->user()->id && ! $request->user()->isAdmin()) {
+        if (! $request->user()->can('view', $analysis)) {
             abort(403, 'Unauthorized action.');
+        }
+
+        // Fetch completed previous analyses for the user (for side-by-side comparison)
+        $previousAnalyses = $request->user()->analyses()
+            ->where('id', '!=', $analysis->id)
+            ->where('status', 'completed')
+            ->latest()
+            ->take(10)
+            ->get(['id', 'job_title', 'resume_original_name', 'score', 'created_at'])
+            ->map(fn ($item) => [
+                'id' => $item->id,
+                'job_title' => $item->job_title,
+                'resume_name' => $item->resume_original_name,
+                'score' => $item->score,
+                'formatted_date' => $item->created_at->format('M j, Y • g:i A'),
+            ]);
+
+        // If a comparison analysis is requested
+        $comparisonAnalysis = null;
+        if ($compareId = $request->integer('compare')) {
+            $compareRecord = $request->user()->analyses()
+                ->where('id', $compareId)
+                ->where('status', 'completed')
+                ->first();
+
+            if ($compareRecord) {
+                $comparisonAnalysis = [
+                    'id' => $compareRecord->id,
+                    'job_title' => $compareRecord->job_title,
+                    'resume_name' => $compareRecord->resume_original_name,
+                    'score' => $compareRecord->score,
+                    'breakdown' => $compareRecord->result['breakdown'] ?? null,
+                    'matched_keywords' => $compareRecord->matched_keywords ?? [],
+                    'missing_keywords' => $compareRecord->missing_keywords ?? [],
+                    'score_delta' => ($analysis->score !== null && $compareRecord->score !== null)
+                        ? ($analysis->score - $compareRecord->score)
+                        : null,
+                    'formatted_date' => $compareRecord->created_at->format('M j, Y • g:i A'),
+                ];
+            }
         }
 
         return Inertia::render('Analyses/Show', [
@@ -106,11 +146,121 @@ class AnalysisController extends Controller
                 'summary' => $analysis->summary,
                 'matched_keywords' => $analysis->matched_keywords,
                 'missing_keywords' => $analysis->missing_keywords,
+                'strengths' => $analysis->result['strengths'] ?? [],
                 'suggestions' => $analysis->suggestions,
+                'breakdown' => $analysis->result['breakdown'] ?? null,
+                'keyword_overlap' => $analysis->result['keyword_overlap'] ?? null,
+                'is_delayed' => (bool) $analysis->is_delayed,
+                'is_basic_fallback' => (bool) $analysis->is_basic_fallback,
                 'error_message' => $analysis->error_message,
                 'created_at' => $analysis->created_at->toISOString(),
                 'formatted_date' => $analysis->created_at->format('M j, Y • g:i A'),
             ],
+            'previous_analyses' => $previousAnalyses,
+            'comparison_analysis' => $comparisonAnalysis,
+        ]);
+    }
+
+    /**
+     * Re-run analysis with edited job description (creates a new analysis).
+     */
+    public function rerun(
+        Request $request,
+        Analysis $analysis,
+        AccessService $accessService
+    ): RedirectResponse {
+        if (! $request->user()->can('rerun', $analysis)) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        $user = $request->user();
+
+        if (! $accessService->canAnalyze($user)) {
+            return redirect()->route('pricing')->with('error', $accessService->reasonDenied($user));
+        }
+
+        $validated = $request->validate([
+            'job_title' => ['nullable', 'string', 'max:255'],
+            'job_company' => ['nullable', 'string', 'max:255'],
+            'jd_text' => ['required', 'string', 'min:50', 'max:' . SettingsService::get('max_jd_chars', 15000)],
+        ]);
+
+        $newAnalysis = Analysis::create([
+            'user_id' => $user->id,
+            'resume_original_name' => $analysis->resume_original_name,
+            'resume_path' => $analysis->resume_path,
+            'resume_text' => $analysis->resume_text,
+            'job_title' => $validated['job_title'] ?: $analysis->job_title,
+            'job_company' => $validated['job_company'] ?: $analysis->job_company,
+            'jd_text' => $validated['jd_text'],
+            'status' => 'queued',
+            'score' => null,
+        ]);
+
+        ProcessAnalysisJob::dispatch($newAnalysis);
+
+        return redirect()->route('analyses.show', $newAnalysis)
+            ->with('success', 'New analysis queued with your updated job description.');
+    }
+
+    /**
+     * Retry a failed analysis (restarts the queue job).
+     */
+    public function retry(Request $request, Analysis $analysis): RedirectResponse
+    {
+        if (! $request->user()->can('rerun', $analysis)) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        if ($analysis->status === 'failed') {
+            $analysis->update([
+                'status' => 'queued',
+                'error_message' => null,
+                'is_delayed' => false,
+            ]);
+
+            ProcessAnalysisJob::dispatch($analysis);
+
+            return redirect()->route('analyses.show', $analysis)
+                ->with('success', 'Analysis re-queued. Scoring will begin shortly.');
+        }
+
+        return redirect()->route('analyses.show', $analysis);
+    }
+
+    /**
+     * Render a print-friendly document view for PDF export.
+     */
+    public function print(Request $request, Analysis $analysis): Response
+    {
+        if (! $request->user()->can('download', $analysis)) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return Inertia::render('Analyses/Print', [
+            'analysis' => [
+                'id' => $analysis->id,
+                'resume_name' => $analysis->resume_original_name,
+                'job_title' => $analysis->job_title,
+                'job_company' => $analysis->job_company,
+                'jd_text' => $analysis->jd_text,
+                'resume_text' => $analysis->resume_text,
+                'status' => $analysis->status,
+                'score' => $analysis->score,
+                'match_score' => $analysis->match_score,
+                'badge_variant' => $analysis->score_badge_variant,
+                'result' => $analysis->result,
+                'summary' => $analysis->summary,
+                'matched_keywords' => $analysis->matched_keywords,
+                'missing_keywords' => $analysis->missing_keywords,
+                'strengths' => $analysis->result['strengths'] ?? [],
+                'suggestions' => $analysis->suggestions,
+                'breakdown' => $analysis->result['breakdown'] ?? null,
+                'keyword_overlap' => $analysis->result['keyword_overlap'] ?? null,
+                'created_at' => $analysis->created_at->toISOString(),
+                'formatted_date' => $analysis->created_at->format('F j, Y'),
+            ],
+            'site_name' => SettingsService::get('site_name', 'ATS Checker'),
         ]);
     }
 
@@ -186,8 +336,8 @@ class AnalysisController extends Controller
      */
     public function destroy(Request $request, Analysis $analysis): RedirectResponse
     {
-        // Enforce ownership
-        if ($analysis->user_id !== $request->user()->id && ! $request->user()->isAdmin()) {
+        // Enforce ownership via policy
+        if (! $request->user()->can('delete', $analysis)) {
             abort(403, 'Unauthorized action.');
         }
 

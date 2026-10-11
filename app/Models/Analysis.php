@@ -25,6 +25,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'error_message',
     'started_at',
     'completed_at',
+    'is_delayed',
+    'is_basic_fallback',
     // Aliases for compatibility
     'resume_name',
     'job_description',
@@ -39,6 +41,8 @@ class Analysis extends Model
         return [
             'score' => 'integer',
             'result' => 'array',
+            'is_delayed' => 'boolean',
+            'is_basic_fallback' => 'boolean',
             'started_at' => 'datetime',
             'completed_at' => 'datetime',
         ];
@@ -47,6 +51,16 @@ class Analysis extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function aiModel(): BelongsTo
+    {
+        return $this->belongsTo(AiModel::class, 'ai_model_id');
+    }
+
+    public function attempts(): \Illuminate\Database\Eloquent\Relations\HasMany
+    {
+        return $this->hasMany(AnalysisAttempt::class);
     }
 
     // --- Backward Compatibility Accessors & Mutators ---
