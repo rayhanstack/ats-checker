@@ -20,7 +20,7 @@ class AccessService
             return true;
         }
 
-        // Active subscription check
+        // Active paid subscription check
         $subscription = $user->activeSubscription;
         if ($subscription && $subscription->isActive()) {
             $plan = $subscription->plan;
@@ -56,19 +56,22 @@ class AccessService
         $subscription = $user->activeSubscription;
         if ($subscription && $subscription->isActive()) {
             $plan = $subscription->plan;
-            $limit = $plan ? $plan->analysis_limit : 'plan';
+            $limit = $plan ? ($plan->analyses_limit ?? 'plan') : 'plan';
+
             return "You have reached your limit of {$limit} analyses for this billing cycle. Upgrade to Annual Unlimited to continue scanning.";
         }
 
         // Case 2: Trial expired
         if ($user->trial_ends_at && $user->trial_ends_at->isPast()) {
             $date = $user->trial_ends_at->format('M j, Y');
+
             return "Your free trial expired on {$date}. Please choose a plan to continue analyzing resumes.";
         }
 
         // Case 3: In trial, but exceeded trial analysis quota
         if ($this->isTrialActive($user)) {
             $trialLimit = $this->getTrialLimit();
+
             return "You have reached your limit of {$trialLimit} analyses in the free trial. Choose a plan to unlock more analyses.";
         }
 
@@ -97,7 +100,7 @@ class AccessService
                 return 'Unlimited';
             }
 
-            $limit = $plan ? $plan->analysis_limit : 50;
+            $limit = $plan ? ($plan->analyses_limit ?? 50) : 50;
             $used = $user->analyses()
                 ->where('created_at', '>=', $subscription->starts_at)
                 ->count();
@@ -125,7 +128,16 @@ class AccessService
             return false;
         }
 
-        return $user->hasActiveTrial();
+        if ($user->hasActiveTrial()) {
+            return true;
+        }
+
+        $subscription = $user->activeSubscription;
+        if ($subscription && $subscription->status === 'trialing' && $subscription->isActive()) {
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -143,11 +155,12 @@ class AccessService
         }
 
         if ($this->isTrialActive($user)) {
-            return Plan::query()->where('slug', 'free-trial')->first() ?? (new Plan([
+            return Plan::query()->whereIn('slug', ['free', 'free-trial'])->first() ?? (new Plan([
                 'name' => 'Free Trial',
-                'slug' => 'free-trial',
-                'analysis_limit' => $this->getTrialLimit(),
-                'interval' => 'trial',
+                'slug' => 'free',
+                'analyses_limit' => $this->getTrialLimit(),
+                'limit_period' => 'trial',
+                'billing_interval' => 'none',
             ]));
         }
 
@@ -155,13 +168,13 @@ class AccessService
     }
 
     /**
-     * Get trial analysis limit from settings or fallback.
+     * Get trial analysis limit from settings or free plan.
      */
     public function getTrialLimit(): int
     {
-        $freePlan = Plan::query()->where('slug', 'free-trial')->first();
-        if ($freePlan && $freePlan->analysis_limit > 0) {
-            return $freePlan->analysis_limit;
+        $freePlan = Plan::query()->whereIn('slug', ['free', 'free-trial'])->first();
+        if ($freePlan && $freePlan->analyses_limit > 0) {
+            return $freePlan->analyses_limit;
         }
 
         return (int) SettingsService::get('trial_analyses_limit', 5);
@@ -181,8 +194,8 @@ class AccessService
 
         // Calculate usage meter
         $isUnlimited = $remaining === 'Unlimited';
-        $totalLimit = $isUnlimited ? 'Unlimited' : ($currentPlan ? $currentPlan->analysis_limit : 5);
-        
+        $totalLimit = $isUnlimited ? 'Unlimited' : ($currentPlan ? ($currentPlan->analyses_limit ?? 5) : 5);
+
         $usedCount = 0;
         if ($subscription && $subscription->isActive()) {
             $usedCount = $user->analyses()
@@ -202,11 +215,13 @@ class AccessService
         $daysRemaining = 0;
         if ($user->trial_ends_at && $user->trial_ends_at->isFuture()) {
             $daysRemaining = max(1, (int) ceil(now()->diffInHours($user->trial_ends_at) / 24));
+        } elseif ($subscription && $subscription->status === 'trialing' && $subscription->ends_at && $subscription->ends_at->isFuture()) {
+            $daysRemaining = max(1, (int) ceil(now()->diffInHours($subscription->ends_at) / 24));
         }
 
         $status = 'expired';
         if ($subscription && $subscription->isActive()) {
-            $status = 'active';
+            $status = $subscription->status;
         } elseif ($isTrial) {
             $status = 'trial';
         }
@@ -224,7 +239,7 @@ class AccessService
             'status' => $status,
             'plan_name' => $currentPlan ? $currentPlan->name : ($isTrial ? 'Free Trial' : 'No Active Plan'),
             'plan_slug' => $currentPlan?->slug,
-            'renews_at' => $subscription?->renews_at?->toISOString(),
+            'renews_at' => $subscription?->ends_at?->toISOString(),
             'ends_at' => $subscription?->ends_at?->toISOString(),
         ];
     }

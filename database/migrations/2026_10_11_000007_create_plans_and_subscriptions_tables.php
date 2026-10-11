@@ -14,15 +14,16 @@ return new class extends Migration
         Schema::create('plans', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug')->unique(); // 'free', 'monthly', 'yearly'
             $table->text('description')->nullable();
-            $table->integer('price_cents')->default(0);
+            $table->decimal('price', 10, 2)->default(0.00);
             $table->string('currency', 3)->default('USD');
-            $table->string('interval')->default('month'); // 'month', 'year', 'trial'
-            $table->integer('analysis_limit')->default(5); // -1 for unlimited
+            $table->enum('billing_interval', ['none', 'month', 'year'])->default('month');
+            $table->integer('analyses_limit')->nullable(); // null = unlimited
+            $table->enum('limit_period', ['trial', 'month', 'year'])->default('month');
             $table->json('features')->nullable();
             $table->boolean('is_active')->default(true);
-            $table->boolean('is_popular')->default(false);
+            $table->boolean('is_featured')->default(false);
             $table->integer('sort_order')->default(0);
             $table->timestamps();
         });
@@ -31,10 +32,13 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->foreignId('plan_id')->constrained()->cascadeOnDelete();
-            $table->string('status')->default('active'); // 'active', 'cancelled', 'past_due', 'expired'
+            $table->enum('status', ['trialing', 'active', 'past_due', 'canceled', 'expired'])->default('active');
             $table->timestamp('starts_at')->useCurrent();
             $table->timestamp('ends_at')->nullable();
-            $table->timestamp('renews_at')->nullable();
+            $table->timestamp('canceled_at')->nullable();
+            $table->string('gateway')->default('manual');
+            $table->string('gateway_subscription_id')->nullable();
+            $table->json('meta')->nullable();
             $table->timestamps();
 
             $table->index(['user_id', 'status']);

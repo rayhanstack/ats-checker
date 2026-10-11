@@ -18,13 +18,14 @@ class PlanFactory extends Factory
             'name' => fake()->words(2, true),
             'slug' => fake()->unique()->slug(),
             'description' => fake()->sentence(),
-            'price_cents' => fake()->randomElement([0, 1900, 3900]),
+            'price' => fake()->randomElement([0.00, 19.00, 149.00]),
             'currency' => 'USD',
-            'interval' => 'month',
-            'analysis_limit' => 50,
+            'billing_interval' => 'month',
+            'analyses_limit' => 50,
+            'limit_period' => 'month',
             'features' => ['Feature 1', 'Feature 2'],
             'is_active' => true,
-            'is_popular' => false,
+            'is_featured' => false,
             'sort_order' => 1,
         ];
     }

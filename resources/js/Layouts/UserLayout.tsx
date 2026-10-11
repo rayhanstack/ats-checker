@@ -47,7 +47,13 @@ export default function UserLayout({ title, children }: UserLayoutProps) {
             active: route().current('analyses.*'),
         },
         {
-            label: 'Pricing & Plans',
+            label: 'Billing & Invoices',
+            href: route('billing'),
+            icon: CreditCard,
+            active: route().current('billing'),
+        },
+        {
+            label: 'Pricing Plans',
             href: route('pricing'),
             icon: CreditCard,
             active: route().current('pricing'),

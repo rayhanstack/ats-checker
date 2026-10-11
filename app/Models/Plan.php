@@ -11,13 +11,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'name',
     'slug',
     'description',
-    'price_cents',
+    'price',
     'currency',
-    'interval',
-    'analysis_limit',
+    'billing_interval',
+    'analyses_limit',
+    'limit_period',
     'features',
     'is_active',
-    'is_popular',
+    'is_featured',
     'sort_order',
 ])]
 class Plan extends Model
@@ -27,11 +28,11 @@ class Plan extends Model
     protected function casts(): array
     {
         return [
-            'price_cents' => 'integer',
-            'analysis_limit' => 'integer',
+            'price' => 'decimal:2',
+            'analyses_limit' => 'integer',
             'features' => 'array',
             'is_active' => 'boolean',
-            'is_popular' => 'boolean',
+            'is_featured' => 'boolean',
             'sort_order' => 'integer',
         ];
     }
@@ -43,15 +44,16 @@ class Plan extends Model
 
     public function isUnlimited(): bool
     {
-        return $this->analysis_limit === -1;
+        return $this->analyses_limit === null || $this->analyses_limit === -1;
     }
 
     public function getFormattedPriceAttribute(): string
     {
-        if ($this->price_cents === 0) {
+        $priceFloat = (float) $this->price;
+        if ($priceFloat == 0) {
             return '$0';
         }
 
-        return '$' . number_format($this->price_cents / 100, 2);
+        return '$' . (fmod($priceFloat, 1) == 0 ? number_format($priceFloat, 0) : number_format($priceFloat, 2));
     }
 }

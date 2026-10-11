@@ -58,6 +58,11 @@ class SettingSeeder extends Seeder
                 'group' => 'billing',
             ],
             [
+                'key' => 'payment_gateway',
+                'value' => 'manual',
+                'group' => 'billing',
+            ],
+            [
                 'key' => 'max_upload_mb',
                 'value' => 5,
                 'group' => 'upload',

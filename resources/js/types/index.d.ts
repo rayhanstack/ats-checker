@@ -111,6 +111,49 @@ export interface PricingPlan {
     cta_link: string;
 }
 
+export interface PlanData {
+    id: string | number;
+    name: string;
+    slug: string;
+    price: number;
+    formatted_price: string;
+    currency: string;
+    billing_interval: 'none' | 'month' | 'year';
+    analyses_limit: number | null;
+    limit_period: 'trial' | 'month' | 'year' | string;
+    description?: string;
+    features: string[];
+    is_featured: boolean;
+    is_unlimited?: boolean;
+}
+
+export interface SubscriptionData {
+    id: number;
+    status: 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired';
+    starts_at: string | null;
+    ends_at: string | null;
+    gateway: string;
+    plan: {
+        id: number;
+        name: string;
+        slug: string;
+        price: string;
+        billing_interval: string;
+    };
+}
+
+export interface PaymentData {
+    id: number;
+    invoice_number: string;
+    amount: string;
+    currency: string;
+    status: 'pending' | 'paid' | 'failed' | 'refunded';
+    gateway: string;
+    paid_at: string | null;
+    created_at: string;
+    plan_name: string;
+}
+
 export interface PageData {
     slug: string;
     title: string;

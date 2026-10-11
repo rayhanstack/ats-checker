@@ -17,10 +17,11 @@ beforeEach(function () {
         ['slug' => 'free-trial'],
         [
             'name' => 'Free Trial',
-            'price_cents' => 0,
+            'price' => 0.00,
             'currency' => 'USD',
-            'interval' => 'trial',
-            'analysis_limit' => 5,
+            'billing_interval' => 'none',
+            'analyses_limit' => 5,
+            'limit_period' => 'trial',
             'features' => ['5 scans'],
             'is_active' => true,
         ]
@@ -30,10 +31,11 @@ beforeEach(function () {
         ['slug' => 'pro-monthly'],
         [
             'name' => 'Professional Monthly',
-            'price_cents' => 1900,
+            'price' => 19.00,
             'currency' => 'USD',
-            'interval' => 'month',
-            'analysis_limit' => 50,
+            'billing_interval' => 'month',
+            'analyses_limit' => 50,
+            'limit_period' => 'month',
             'features' => ['50 scans'],
             'is_active' => true,
         ]
@@ -43,10 +45,11 @@ beforeEach(function () {
         ['slug' => 'annual-unlimited'],
         [
             'name' => 'Annual Unlimited',
-            'price_cents' => 14900,
+            'price' => 149.00,
             'currency' => 'USD',
-            'interval' => 'year',
-            'analysis_limit' => -1,
+            'billing_interval' => 'year',
+            'analyses_limit' => null,
+            'limit_period' => 'year',
             'features' => ['Unlimited scans'],
             'is_active' => true,
         ]
@@ -158,8 +161,8 @@ test('active subscriber who reaches monthly quota is blocked and redirected to /
 
     $smallPlan = Plan::factory()->create([
         'name' => 'Small Plan',
-        'analysis_limit' => 2,
-        'interval' => 'month',
+        'analyses_limit' => 2,
+        'billing_interval' => 'month',
     ]);
 
     Subscription::create([
