@@ -36,16 +36,16 @@ class DashboardController extends Controller
             ->take(5)
             ->get([
                 'id',
-                'resume_name',
+                'resume_original_name',
                 'job_title',
                 'job_company',
-                'match_score',
+                'score',
                 'status',
                 'created_at',
             ])
             ->map(fn ($item) => [
                 'id' => $item->id,
-                'resume_name' => $item->resume_name,
+                'resume_name' => $item->resume_original_name,
                 'job_title' => $item->job_title,
                 'job_company' => $item->job_company,
                 'match_score' => $item->match_score,
@@ -57,8 +57,8 @@ class DashboardController extends Controller
 
         // Aggregate analysis stats
         $totalScans = $user->analyses()->count();
-        $avgScore = $totalScans > 0 ? (int) round($user->analyses()->avg('match_score')) : 0;
-        $bestScore = $totalScans > 0 ? (int) $user->analyses()->max('match_score') : 0;
+        $avgScore = $totalScans > 0 ? (int) round($user->analyses()->whereNotNull('score')->avg('score') ?? 0) : 0;
+        $bestScore = $totalScans > 0 ? (int) ($user->analyses()->whereNotNull('score')->max('score') ?? 0) : 0;
 
         return Inertia::render('Dashboard', [
             'greeting' => "{$timeGreeting}, {$user->name}!",

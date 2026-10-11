@@ -78,6 +78,11 @@ class SettingSeeder extends Seeder
                 'group' => 'analysis',
             ],
             [
+                'key' => 'analysis_throttle_per_hour',
+                'value' => 10,
+                'group' => 'analysis',
+            ],
+            [
                 'key' => 'resume_retention_days',
                 'value' => 30,
                 'group' => 'retention',

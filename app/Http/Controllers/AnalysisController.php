@@ -2,15 +2,118 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\ResumeExtractionException;
+use App\Http\Requests\StoreAnalysisRequest;
+use App\Jobs\ProcessAnalysisJob;
 use App\Models\Analysis;
+use App\Services\AccessService;
+use App\Services\ResumeTextExtractor;
+use App\Services\SettingsService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Inertia\Inertia;
 use Inertia\Response;
 
 class AnalysisController extends Controller
 {
+    /**
+     * Display the CV upload and job description submission page.
+     */
+    public function create(): Response
+    {
+        return Inertia::render('Analyze', [
+            'uploadConfig' => [
+                'maxUploadMb' => (int) SettingsService::get('max_upload_mb', 5),
+                'allowedFileTypes' => SettingsService::get('allowed_file_types', 'pdf,docx'),
+                'maxJdChars' => (int) SettingsService::get('max_jd_chars', 15000),
+            ],
+        ]);
+    }
+
+    /**
+     * Store and process resume upload and job description.
+     */
+    public function store(
+        StoreAnalysisRequest $request,
+        AccessService $accessService,
+        ResumeTextExtractor $extractor
+    ): RedirectResponse {
+        $user = $request->user();
+
+        if (! $accessService->canAnalyze($user)) {
+            return redirect()->route('pricing')->with('error', $accessService->reasonDenied($user));
+        }
+
+        $file = $request->file('resume');
+        $extension = strtolower($file->getClientOriginalExtension());
+        $randomFileName = Str::uuid()->toString() . '.' . $extension;
+
+        // Store on private disk
+        $storedPath = $file->storeAs('resumes', $randomFileName, 'local');
+        $fullPath = Storage::disk('local')->path($storedPath);
+
+        try {
+            $extractedText = $extractor->extract($fullPath, $extension);
+        } catch (ResumeExtractionException $e) {
+            // Delete file if extraction fails (corrupt, encrypted, or image-only)
+            Storage::disk('local')->delete($storedPath);
+
+            return back()->withErrors(['resume' => $e->getMessage()])->withInput();
+        }
+
+        $analysis = Analysis::create([
+            'user_id' => $user->id,
+            'resume_original_name' => $file->getClientOriginalName(),
+            'resume_path' => $storedPath,
+            'resume_text' => $extractedText,
+            'job_title' => $request->validated('job_title') ?: 'Target Position',
+            'job_company' => $request->validated('job_company'),
+            'jd_text' => $request->validated('jd_text'),
+            'status' => 'queued',
+            'score' => null,
+        ]);
+
+        ProcessAnalysisJob::dispatch($analysis);
+
+        return redirect()->route('analyses.show', $analysis)
+            ->with('success', 'Your resume has been uploaded and queued for ATS scoring.');
+    }
+
+    /**
+     * Display specific analysis results or processing progress.
+     */
+    public function show(Request $request, Analysis $analysis): Response
+    {
+        if ($analysis->user_id !== $request->user()->id && ! $request->user()->isAdmin()) {
+            abort(403, 'Unauthorized action.');
+        }
+
+        return Inertia::render('Analyses/Show', [
+            'analysis' => [
+                'id' => $analysis->id,
+                'resume_name' => $analysis->resume_original_name,
+                'job_title' => $analysis->job_title,
+                'job_company' => $analysis->job_company,
+                'jd_text' => $analysis->jd_text,
+                'resume_text' => $analysis->resume_text,
+                'status' => $analysis->status,
+                'score' => $analysis->score,
+                'match_score' => $analysis->match_score,
+                'badge_variant' => $analysis->score_badge_variant,
+                'result' => $analysis->result,
+                'summary' => $analysis->summary,
+                'matched_keywords' => $analysis->matched_keywords,
+                'missing_keywords' => $analysis->missing_keywords,
+                'suggestions' => $analysis->suggestions,
+                'error_message' => $analysis->error_message,
+                'created_at' => $analysis->created_at->toISOString(),
+                'formatted_date' => $analysis->created_at->format('M j, Y • g:i A'),
+            ],
+        ]);
+    }
+
     /**
      * Display a listing of the user's analyses with search, filters, and pagination.
      */
@@ -20,21 +123,21 @@ class AnalysisController extends Controller
 
         $query = $user->analyses()->latest();
 
-        // 1. Search term (matches job_title, resume_name, job_company)
+        // 1. Search term
         if ($search = $request->string('search')->trim()->toString()) {
             $query->where(function ($q) use ($search) {
                 $q->where('job_title', 'like', "%{$search}%")
-                    ->orWhere('resume_name', 'like', "%{$search}%")
+                    ->orWhere('resume_original_name', 'like', "%{$search}%")
                     ->orWhere('job_company', 'like', "%{$search}%");
             });
         }
 
-        // 2. Score filter ('high' >= 80, 'medium' 60-79, 'low' < 60)
+        // 2. Score filter
         if ($scoreFilter = $request->string('score')->toString()) {
             match ($scoreFilter) {
-                'high' => $query->where('match_score', '>=', 80),
-                'medium' => $query->whereBetween('match_score', [60, 79]),
-                'low' => $query->where('match_score', '<', 60),
+                'high' => $query->where('score', '>=', 80),
+                'medium' => $query->whereBetween('score', [60, 79]),
+                'low' => $query->where('score', '<', 60),
                 default => null,
             };
         }
@@ -53,7 +156,7 @@ class AnalysisController extends Controller
             ->withQueryString()
             ->through(fn (Analysis $analysis) => [
                 'id' => $analysis->id,
-                'resume_name' => $analysis->resume_name,
+                'resume_name' => $analysis->resume_original_name,
                 'job_title' => $analysis->job_title,
                 'job_company' => $analysis->job_company,
                 'match_score' => $analysis->match_score,
@@ -73,7 +176,7 @@ class AnalysisController extends Controller
             ],
             'stats' => [
                 'total' => $user->analyses()->count(),
-                'avg_score' => (int) round($user->analyses()->avg('match_score') ?? 0),
+                'avg_score' => (int) round($user->analyses()->whereNotNull('score')->avg('score') ?? 0),
             ],
         ]);
     }
@@ -88,9 +191,9 @@ class AnalysisController extends Controller
             abort(403, 'Unauthorized action.');
         }
 
-        // Delete associated resume file if stored
-        if ($analysis->resume_path && Storage::exists($analysis->resume_path)) {
-            Storage::delete($analysis->resume_path);
+        // Delete associated resume file on private disk
+        if ($analysis->resume_path && Storage::disk('local')->exists($analysis->resume_path)) {
+            Storage::disk('local')->delete($analysis->resume_path);
         }
 
         $analysis->delete();

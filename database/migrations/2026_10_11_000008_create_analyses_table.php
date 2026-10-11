@@ -14,21 +14,26 @@ return new class extends Migration
         Schema::create('analyses', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->string('resume_name');
-            $table->string('resume_path')->nullable();
-            $table->string('job_title');
+            $table->string('resume_original_name');
+            $table->string('resume_path');
+            $table->longText('resume_text')->nullable();
+            $table->string('job_title')->nullable();
             $table->string('job_company')->nullable();
-            $table->longText('job_description')->nullable();
-            $table->unsignedTinyInteger('match_score')->default(0);
-            $table->string('status')->default('completed'); // 'completed', 'processing', 'failed'
-            $table->text('summary')->nullable();
-            $table->json('matched_keywords')->nullable();
-            $table->json('missing_keywords')->nullable();
-            $table->json('suggestions')->nullable();
+            $table->longText('jd_text');
+            $table->string('status')->default('queued'); // 'queued', 'processing', 'completed', 'failed'
+            $table->unsignedTinyInteger('score')->nullable();
+            $table->json('result')->nullable();
+            $table->string('ai_model_id')->nullable();
+            $table->unsignedInteger('tokens_in')->nullable();
+            $table->unsignedInteger('tokens_out')->nullable();
+            $table->text('error_message')->nullable();
+            $table->timestamp('started_at')->nullable();
+            $table->timestamp('completed_at')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->index(['user_id', 'created_at']);
-            $table->index(['user_id', 'match_score']);
+            $table->index(['user_id', 'status']);
         });
     }
 

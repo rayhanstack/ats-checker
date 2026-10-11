@@ -28,5 +28,13 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Vite::prefetch(concurrency: 3);
+
+        \Illuminate\Support\Facades\RateLimiter::for('analyses', function (\Illuminate\Http\Request $request) {
+            $limit = (int) \App\Services\SettingsService::get('analysis_throttle_per_hour', 10);
+
+            return \Illuminate\Cache\RateLimiting\Limit::perHour($limit)->by(
+                $request->user()?->id ?: $request->ip()
+            );
+        });
     }
 }

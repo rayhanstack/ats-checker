@@ -55,15 +55,12 @@ Route::get('/sitemap.xml', function () {
 Route::get('/pricing', [\App\Http\Controllers\PricingController::class, 'index'])->name('pricing');
 
 // Protected Analysis / Upload Route (auth + verified + can.analyze)
-Route::get('/analyze', function () {
-    return Inertia::render('Analyze', [
-        'uploadConfig' => [
-            'maxUploadMb' => (int) \App\Services\SettingsService::get('max_upload_mb', 5),
-            'allowedFileTypes' => \App\Services\SettingsService::get('allowed_file_types', 'pdf,docx'),
-            'maxJdChars' => (int) \App\Services\SettingsService::get('max_jd_chars', 15000),
-        ],
-    ]);
-})->middleware(['auth', 'verified', 'can.analyze'])->name('analyze');
+Route::middleware(['auth', 'verified', 'can.analyze'])->group(function () {
+    Route::get('/analyze', [\App\Http\Controllers\AnalysisController::class, 'create'])->name('analyze');
+    Route::post('/analyze', [\App\Http\Controllers\AnalysisController::class, 'store'])
+        ->middleware('throttle:analyses')
+        ->name('analyze.store');
+});
 
 // Candidate Workspace Dashboard
 Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
@@ -73,6 +70,7 @@ Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'ind
 // Analyses History & Management
 Route::middleware('auth')->group(function () {
     Route::get('/analyses', [\App\Http\Controllers\AnalysisController::class, 'index'])->name('analyses.index');
+    Route::get('/analyses/{analysis}', [\App\Http\Controllers\AnalysisController::class, 'show'])->name('analyses.show');
     Route::delete('/analyses/{analysis}', [\App\Http\Controllers\AnalysisController::class, 'destroy'])->name('analyses.destroy');
 
     // Billing & Subscriptions
