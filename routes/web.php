@@ -51,6 +51,17 @@ Route::get('/sitemap.xml', function () {
     return Response::make($xml, 200, ['Content-Type' => 'application/xml']);
 })->name('sitemap');
 
+// Protected Analysis / Upload Route
+Route::get('/analyze', function () {
+    return Inertia::render('Analyze', [
+        'uploadConfig' => [
+            'maxUploadMb' => (int) \App\Services\SettingsService::get('max_upload_mb', 5),
+            'allowedFileTypes' => \App\Services\SettingsService::get('allowed_file_types', 'pdf,docx'),
+            'maxJdChars' => (int) \App\Services\SettingsService::get('max_jd_chars', 15000),
+        ],
+    ]);
+})->middleware(['auth', 'verified'])->name('analyze');
+
 // Candidate Workspace Dashboard
 Route::get('/dashboard', function () {
     return Inertia::render('Dashboard');

@@ -1,58 +1,56 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# ATS Checker - AI-Powered Resume Optimization & ATS Scoring
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+ATS Checker is a high-performance web application that compares candidate resumes against job descriptions, returning an instant ATS compatibility score (0-100), matched and missing keywords, formatting diagnostics, and section-by-section AI fixes powered by Claude.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## Google OAuth Setup (Laravel Socialite)
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+To enable **"Continue with Google"** authentication:
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### 1. Create Credentials in Google Cloud Console
+1. Navigate to the [Google Cloud Console](https://console.cloud.google.com/).
+2. Create a new project or select an existing project (e.g., `ats-checker`).
+3. Under **APIs & Services** &rarr; **OAuth consent screen**:
+   - Choose **External** user type.
+   - Fill in App name: `ATS Checker`, User support email, and Developer contact information.
+   - Add scopes: `.../auth/userinfo.email`, `.../auth/userinfo.profile`, `openid`.
+4. Under **APIs & Services** &rarr; **Credentials**:
+   - Click **Create Credentials** &rarr; **OAuth client ID**.
+   - Application type: **Web application**.
+   - Name: `ATS Checker Web Client`.
 
-## Learning Laravel
+### 2. Configure Authorized JavaScript Origins & Redirect URIs
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+#### Local Development:
+- **Authorized JavaScript origins**:
+  - `http://localhost:8000`
+  - `http://127.0.0.1:8000`
+- **Authorized redirect URIs**:
+  - `http://localhost:8000/auth/google/callback`
+  - `http://127.0.0.1:8000/auth/google/callback`
 
-In addition, [Laracasts](https://laracasts.com) contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+#### Production:
+- **Authorized JavaScript origins**:
+  - `https://yourdomain.com`
+- **Authorized redirect URIs**:
+  - `https://yourdomain.com/auth/google/callback`
 
-You can also watch bite-sized lessons with real-world projects on [Laravel Learn](https://laravel.com/learn), where you will be guided through building a Laravel application from scratch while learning PHP fundamentals.
-
-## Agentic Development
-
-Laravel's predictable structure and conventions make it ideal for AI coding agents like Claude Code, Cursor, and GitHub Copilot. Install [Laravel Boost](https://laravel.com/docs/ai) to supercharge your AI workflow:
-
-```bash
-composer require laravel/boost --dev
-
-php artisan boost:install
+### 3. Configure `.env`
+Add your Client ID and Client Secret to `.env`:
+```env
+GOOGLE_CLIENT_ID=your-google-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-your-google-client-secret
+GOOGLE_REDIRECT_URI="${APP_URL}/auth/google/callback"
 ```
 
-Boost provides your agent 15+ tools and skills that help agents build Laravel applications while following best practices.
+> **Security Note:** OAuth secrets reside strictly in `.env` and are never committed to git, stored in the database, or passed to frontend props. When Google credentials are missing or `google_login_enabled` is set to false in settings, the Google login buttons are automatically hidden.
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+## Authentication Features & Security Guardrails
+- **7-Day Free Trial:** Automatically initiated on registration (`trial_ends_at = now()->addDays(trial_days)`).
+- **Mandatory Email Verification:** `User` implements `MustVerifyEmail`. Unverified users are allowed to log in and access profile settings, but are strictly gated from `/analyze` and resume uploads.
+- **Guest Upload Guard:** Guest visitors clicking "Check my CV" or visiting `/analyze` are redirected to `/login` with an informative banner (*"Please log in to upload your resume"*), preserving the intended destination so they seamlessly return after login or registration.
+- **Account Takeover Protection:** If a user attempts to sign in with Google using an email that matches an existing local account that is **unverified**, automatic linking is blocked. The user must authenticate using their existing password first.
+- **Passwordless Social Disconnect Guard:** Users who authenticated solely via Google cannot disconnect Google without creating a password first.

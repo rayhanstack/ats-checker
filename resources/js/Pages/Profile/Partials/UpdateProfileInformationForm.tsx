@@ -1,10 +1,7 @@
-import InputError from '@/Components/InputError';
-import InputLabel from '@/Components/InputLabel';
-import PrimaryButton from '@/Components/PrimaryButton';
-import TextInput from '@/Components/TextInput';
-import { Transition } from '@headlessui/react';
+import React, { FormEventHandler } from 'react';
 import { Link, useForm, usePage } from '@inertiajs/react';
-import { FormEventHandler } from 'react';
+import { Card, Button, Input } from '@/Components/UI';
+import { User, Mail, Save, AlertCircle, CheckCircle2, ShieldAlert } from 'lucide-react';
 import { PageProps } from '@/types';
 
 export default function UpdateProfileInformation({
@@ -26,94 +23,93 @@ export default function UpdateProfileInformation({
 
     const submit: FormEventHandler = (e) => {
         e.preventDefault();
-
         patch(route('profile.update'));
     };
 
     return (
-        <section className={className}>
-            <header>
-                <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100">
+        <Card variant="glass" className={`p-6 sm:p-8 space-y-6 ${className}`}>
+            <header className="border-b border-slate-200/50 pb-4 dark:border-white/10">
+                <h2 className="text-lg font-bold text-slate-900 dark:text-white">
                     Profile Information
                 </h2>
-
-                <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                    Update your account's profile information and email address.
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                    Update your account's display name and primary email address.
                 </p>
             </header>
 
-            <form onSubmit={submit} className="mt-6 space-y-6">
-                <div>
-                    <InputLabel htmlFor="name" value="Name" />
-
-                    <TextInput
-                        id="name"
-                        className="mt-1 block w-full"
-                        value={data.name}
-                        onChange={(e) => setData('name', e.target.value)}
-                        required
-                        isFocused
-                        autoComplete="name"
-                    />
-
-                    <InputError className="mt-2" message={errors.name} />
-                </div>
-
-                <div>
-                    <InputLabel htmlFor="email" value="Email" />
-
-                    <TextInput
-                        id="email"
-                        type="email"
-                        className="mt-1 block w-full"
-                        value={data.email}
-                        onChange={(e) => setData('email', e.target.value)}
-                        required
-                        autoComplete="username"
-                    />
-
-                    <InputError className="mt-2" message={errors.email} />
-                </div>
-
-                {mustVerifyEmail && user.email_verified_at === null && (
+            {/* Re-verification notice if email is unverified */}
+            {mustVerifyEmail && user.email_verified_at === null && (
+                <div className="flex items-start gap-3 rounded-xl border border-amber-500/30 bg-amber-50/70 p-3.5 text-xs text-amber-900 dark:border-amber-500/40 dark:bg-amber-950/50 dark:text-amber-200">
+                    <ShieldAlert className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400 mt-0.5" />
                     <div>
-                        <p className="mt-2 text-sm text-gray-800 dark:text-gray-200">
-                            Your email address is unverified.
-                            <Link
-                                href={route('verification.send')}
-                                method="post"
-                                as="button"
-                                className="rounded-md text-sm text-gray-600 underline hover:text-gray-900 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 dark:text-gray-400 dark:hover:text-gray-100 dark:focus:ring-offset-gray-800"
-                            >
-                                Click here to re-send the verification email.
-                            </Link>
+                        <p className="font-semibold">Your email address is unverified.</p>
+                        <p className="mt-0.5 text-amber-700 dark:text-amber-300">
+                            You must verify your email before running resume analyses.
                         </p>
-
-                        {status === 'verification-link-sent' && (
-                            <div className="mt-2 text-sm font-medium text-green-600 dark:text-green-400">
-                                A new verification link has been sent to your
-                                email address.
-                            </div>
-                        )}
+                        <Link
+                            href={route('verification.send')}
+                            method="post"
+                            as="button"
+                            className="mt-2 inline-flex items-center gap-1 font-bold text-indigo-700 underline hover:text-indigo-900 dark:text-indigo-400 dark:hover:text-indigo-300"
+                        >
+                            Click here to resend the verification email
+                        </Link>
                     </div>
-                )}
+                </div>
+            )}
 
-                <div className="flex items-center gap-4">
-                    <PrimaryButton disabled={processing}>Save</PrimaryButton>
+            {status === 'verification-link-sent' && (
+                <div className="flex items-center gap-2 rounded-xl border border-emerald-500/30 bg-emerald-50/80 p-3 text-xs font-semibold text-emerald-800 dark:border-emerald-500/40 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <CheckCircle2 className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+                    <span>A new verification link has been sent to your email address.</span>
+                </div>
+            )}
 
-                    <Transition
-                        show={recentlySuccessful}
-                        enter="transition ease-in-out"
-                        enterFrom="opacity-0"
-                        leave="transition ease-in-out"
-                        leaveTo="opacity-0"
+            <form onSubmit={submit} className="space-y-4">
+                <Input
+                    label="Full Name"
+                    id="name"
+                    name="name"
+                    value={data.name}
+                    autoComplete="name"
+                    leftIcon={<User className="h-4 w-4" />}
+                    error={errors.name}
+                    onChange={(e) => setData('name', e.target.value)}
+                    required
+                />
+
+                <Input
+                    label="Email Address"
+                    id="email"
+                    type="email"
+                    name="email"
+                    value={data.email}
+                    autoComplete="username"
+                    leftIcon={<Mail className="h-4 w-4" />}
+                    error={errors.email}
+                    helperText="Changing your email address will require re-verification."
+                    onChange={(e) => setData('email', e.target.value)}
+                    required
+                />
+
+                <div className="flex items-center gap-4 pt-2">
+                    <Button
+                        type="submit"
+                        variant="primary"
+                        size="md"
+                        isLoading={processing}
+                        leftIcon={<Save className="h-4 w-4" />}
                     >
-                        <p className="text-sm text-gray-600 dark:text-gray-400">
-                            Saved.
+                        Save Changes
+                    </Button>
+
+                    {recentlySuccessful && (
+                        <p className="text-xs font-medium text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
+                            <CheckCircle2 className="h-3.5 w-3.5" /> Saved successfully.
                         </p>
-                    </Transition>
+                    )}
                 </div>
             </form>
-        </section>
+        </Card>
     );
 }

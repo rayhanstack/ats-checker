@@ -92,7 +92,7 @@ export default function Welcome({ faqs, testimonials, plans, stats }: WelcomePro
 
                     {/* CTAs */}
                     <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
-                        <Link href={auth.user ? route('dashboard') : route('register')}>
+                        <Link href={route('analyze')}>
                             <Button
                                 variant="primary"
                                 size="lg"

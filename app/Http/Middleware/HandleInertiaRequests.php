@@ -40,12 +40,22 @@ class HandleInertiaRequests extends Middleware
                     'name' => $user->name,
                     'email' => $user->email,
                     'role' => $user->role->value,
+                    'avatar_url' => $user->avatar_url,
+                    'has_password' => $user->hasPassword(),
+                    'is_google_linked' => $user->isLinkedWith('google'),
                     'is_admin' => $user->isAdmin(),
                     'is_active' => $user->is_active,
                     'trial_ends_at' => $user->trial_ends_at?->toISOString(),
                     'has_active_trial' => $user->hasActiveTrial(),
                     'email_verified_at' => $user->email_verified_at?->toISOString(),
                 ] : null,
+            ],
+            'features' => [
+                'google_login_enabled' => (bool) (SettingsService::get('google_login_enabled', true)
+                    && !empty(config('services.google.client_id'))
+                    && !empty(config('services.google.client_secret'))),
+                'email_verification_required' => (bool) SettingsService::get('email_verification_required', true),
+                'registration_enabled' => (bool) SettingsService::get('registration_enabled', true),
             ],
             'flash' => [
                 'success' => fn () => $request->session()->get('success'),

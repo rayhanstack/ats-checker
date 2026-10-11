@@ -18,9 +18,14 @@ class ProfileController extends Controller
      */
     public function edit(Request $request): Response
     {
+        $user = $request->user();
+
         return Inertia::render('Profile/Edit', [
-            'mustVerifyEmail' => $request->user() instanceof MustVerifyEmail,
+            'mustVerifyEmail' => $user instanceof MustVerifyEmail,
             'status' => session('status'),
+            'hasPassword' => $user->hasPassword(),
+            'isGoogleLinked' => $user->isLinkedWith('google'),
+            'socialAccounts' => $user->socialAccounts()->get(['provider', 'provider_email', 'avatar_url', 'created_at']),
         ]);
     }
 
@@ -33,11 +38,12 @@ class ProfileController extends Controller
 
         if ($request->user()->isDirty('email')) {
             $request->user()->email_verified_at = null;
+            $request->user()->sendEmailVerificationNotification();
         }
 
         $request->user()->save();
 
-        return Redirect::route('profile.edit');
+        return Redirect::route('profile.edit')->with('status', 'profile-updated');
     }
 
     /**
@@ -45,19 +51,27 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
-
         $user = $request->user();
+
+        if ($user->hasPassword()) {
+            $request->validate([
+                'password' => ['required', 'current_password'],
+            ]);
+        } else {
+            $request->validate([
+                'confirmation' => ['required', 'string', 'in:DELETE'],
+            ]);
+        }
 
         Auth::logout();
 
+        // Delete user's social accounts and cascaded data
+        $user->socialAccounts()->delete();
         $user->delete();
 
         $request->session()->invalidate();
         $request->session()->regenerateToken();
 
-        return Redirect::to('/');
+        return Redirect::to('/')->with('success', 'Your account has been deleted.');
     }
 }

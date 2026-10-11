@@ -8,6 +8,7 @@ use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\PasswordController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
+use App\Http\Controllers\Auth\SocialAuthController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Support\Facades\Route;
 
@@ -33,6 +34,13 @@ Route::middleware('guest')->group(function () {
 
     Route::post('reset-password', [NewPasswordController::class, 'store'])
         ->name('password.store');
+
+    // Google Socialite Routes
+    Route::get('auth/google/redirect', [SocialAuthController::class, 'redirect'])
+        ->name('auth.google.redirect');
+
+    Route::get('auth/google/callback', [SocialAuthController::class, 'callback'])
+        ->name('auth.google.callback');
 });
 
 Route::middleware('auth')->group(function () {
@@ -53,6 +61,13 @@ Route::middleware('auth')->group(function () {
     Route::post('confirm-password', [ConfirmablePasswordController::class, 'store']);
 
     Route::put('password', [PasswordController::class, 'update'])->name('password.update');
+
+    // Google OAuth Connect / Disconnect
+    Route::get('auth/google/connect', [SocialAuthController::class, 'redirect'])
+        ->name('auth.google.connect');
+
+    Route::post('auth/google/disconnect', [SocialAuthController::class, 'disconnect'])
+        ->name('auth.google.disconnect');
 
     Route::post('logout', [AuthenticatedSessionController::class, 'destroy'])
         ->name('logout');

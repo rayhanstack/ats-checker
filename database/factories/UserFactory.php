@@ -68,4 +68,11 @@ class UserFactory extends Factory
             'trial_ends_at' => now()->subDay(),
         ]);
     }
+
+    public function withoutPassword(): static
+    {
+        return $this->state(fn (array $attributes) => [
+            'password' => null,
+        ]);
+    }
 }

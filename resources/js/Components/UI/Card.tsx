@@ -3,12 +3,14 @@ import React, { HTMLAttributes } from 'react';
 export interface CardProps extends HTMLAttributes<HTMLDivElement> {
     interactive?: boolean;
     padding?: 'none' | 'sm' | 'md' | 'lg';
+    variant?: 'glass' | 'solid' | 'subtle';
 }
 
 export default function Card({
     children,
     interactive = false,
     padding = 'md',
+    variant = 'glass',
     className = '',
     ...props
 }: CardProps) {
@@ -19,7 +21,13 @@ export default function Card({
         lg: 'p-8 sm:p-10',
     };
 
-    const cardClass = interactive ? 'glass-card-interactive' : 'glass-card';
+    const variantStyles = {
+        glass: interactive ? 'glass-card-interactive' : 'glass-card',
+        solid: 'rounded-2xl border border-slate-200 bg-white shadow-card dark:border-white/10 dark:bg-slate-900',
+        subtle: 'rounded-2xl border border-slate-100 bg-slate-50/50 dark:border-white/5 dark:bg-white/[0.02]',
+    };
+
+    const cardClass = variantStyles[variant] || (interactive ? 'glass-card-interactive' : 'glass-card');
 
     return (
         <div className={`${cardClass} ${paddingStyles[padding]} ${className}`} {...props}>

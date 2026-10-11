@@ -87,6 +87,16 @@ class SettingSeeder extends Seeder
                 'value' => true,
                 'group' => 'auth',
             ],
+            [
+                'key' => 'email_verification_required',
+                'value' => true,
+                'group' => 'auth',
+            ],
+            [
+                'key' => 'google_login_enabled',
+                'value' => true,
+                'group' => 'auth',
+            ],
         ];
 
         foreach ($settings as $setting) {

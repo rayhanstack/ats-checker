@@ -4,12 +4,21 @@ export interface User {
     id: number;
     name: string;
     email: string;
+    avatar_url?: string | null;
+    has_password?: boolean;
+    is_google_linked?: boolean;
     role: Role;
     is_admin: boolean;
     is_active: boolean;
     trial_ends_at: string | null;
     has_active_trial: boolean;
     email_verified_at?: string | null;
+}
+
+export interface AppFeatures {
+    google_login_enabled: boolean;
+    email_verification_required: boolean;
+    registration_enabled: boolean;
 }
 
 export interface FlashMessages {
@@ -71,6 +80,7 @@ export type PageProps<
     auth: {
         user: User | null;
     };
+    features: AppFeatures;
     flash: FlashMessages;
     settings: AppSettings;
     [key: string]: unknown;
