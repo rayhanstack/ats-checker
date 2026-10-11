@@ -88,18 +88,22 @@ Route::middleware('auth')->group(function () {
 
 // Admin Console
 Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(function () {
-    Route::get('/dashboard', function () {
-        return Inertia::render('Admin/Dashboard', [
-            'stats' => [
-                'total_users' => User::count(),
-                'active_trials' => User::where('trial_ends_at', '>', now())->count(),
-                'admin_users' => User::where('role', Role::Admin)->count(),
-            ],
-            'recent_users' => User::latest()
-                ->take(5)
-                ->get(['id', 'name', 'email', 'role', 'is_active', 'trial_ends_at', 'created_at']),
-        ]);
-    })->name('dashboard');
+    Route::get('/', fn () => redirect()->route('admin.dashboard'));
+    Route::get('/dashboard', [\App\Http\Controllers\Admin\DashboardController::class, 'index'])->name('dashboard');
+
+    // Users Management
+    Route::get('/users', [\App\Http\Controllers\Admin\UserController::class, 'index'])->name('users.index');
+    Route::post('/users', [\App\Http\Controllers\Admin\UserController::class, 'store'])->name('users.store');
+    Route::get('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'show'])->name('users.show');
+    Route::put('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'update'])->name('users.update');
+    Route::post('/users/{user}/toggle-status', [\App\Http\Controllers\Admin\UserController::class, 'toggleStatus'])->name('users.toggle-status');
+    Route::post('/users/{user}/extend-trial', [\App\Http\Controllers\Admin\UserController::class, 'extendTrial'])->name('users.extend-trial');
+    Route::post('/users/{user}/assign-plan', [\App\Http\Controllers\Admin\UserController::class, 'assignPlan'])->name('users.assign-plan');
+    Route::post('/users/{user}/reset-password', [\App\Http\Controllers\Admin\UserController::class, 'resetPassword'])->name('users.reset-password');
+    Route::delete('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
+
+    // Audit Logs
+    Route::get('/audit-logs', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
 });
 
 require __DIR__.'/auth.php';

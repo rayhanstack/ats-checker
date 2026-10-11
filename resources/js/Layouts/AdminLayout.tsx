@@ -35,10 +35,22 @@ export default function AdminLayout({
 
     const navItems = [
         {
-            label: 'Admin Overview',
+            label: 'Dashboard',
             href: route('admin.dashboard'),
-            icon: Shield,
+            icon: LayoutDashboard,
             active: route().current('admin.dashboard'),
+        },
+        {
+            label: 'Users',
+            href: route('admin.users.index'),
+            icon: Users,
+            active: route().current('admin.users.*'),
+        },
+        {
+            label: 'Audit Logs',
+            href: route('admin.audit-logs.index'),
+            icon: Shield,
+            active: route().current('admin.audit-logs.*'),
         },
     ];
 
