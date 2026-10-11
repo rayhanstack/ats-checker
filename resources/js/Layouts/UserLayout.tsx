@@ -35,6 +35,24 @@ export default function UserLayout({ title, children }: UserLayoutProps) {
             active: route().current('dashboard'),
         },
         {
+            label: 'Check My CV',
+            href: route('analyze'),
+            icon: Sparkles,
+            active: route().current('analyze'),
+        },
+        {
+            label: 'Analyses History',
+            href: route('analyses.index'),
+            icon: FileText,
+            active: route().current('analyses.*'),
+        },
+        {
+            label: 'Pricing & Plans',
+            href: route('pricing'),
+            icon: CreditCard,
+            active: route().current('pricing'),
+        },
+        {
             label: 'Profile & Settings',
             href: route('profile.edit'),
             icon: UserIcon,

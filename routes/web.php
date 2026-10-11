@@ -51,7 +51,10 @@ Route::get('/sitemap.xml', function () {
     return Response::make($xml, 200, ['Content-Type' => 'application/xml']);
 })->name('sitemap');
 
-// Protected Analysis / Upload Route
+// Pricing Page
+Route::get('/pricing', [\App\Http\Controllers\PricingController::class, 'index'])->name('pricing');
+
+// Protected Analysis / Upload Route (auth + verified + can.analyze)
 Route::get('/analyze', function () {
     return Inertia::render('Analyze', [
         'uploadConfig' => [
@@ -60,15 +63,18 @@ Route::get('/analyze', function () {
             'maxJdChars' => (int) \App\Services\SettingsService::get('max_jd_chars', 15000),
         ],
     ]);
-})->middleware(['auth', 'verified'])->name('analyze');
+})->middleware(['auth', 'verified', 'can.analyze'])->name('analyze');
 
 // Candidate Workspace Dashboard
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth'])->name('dashboard');
+Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])
+    ->middleware(['auth'])
+    ->name('dashboard');
 
-// User Profile
+// Analyses History & Management
 Route::middleware('auth')->group(function () {
+    Route::get('/analyses', [\App\Http\Controllers\AnalysisController::class, 'index'])->name('analyses.index');
+    Route::delete('/analyses/{analysis}', [\App\Http\Controllers\AnalysisController::class, 'destroy'])->name('analyses.destroy');
+
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');

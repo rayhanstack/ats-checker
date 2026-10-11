@@ -29,6 +29,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'admin' => \App\Http\Middleware\EnsureUserIsAdmin::class,
             'verified' => \App\Http\Middleware\EnsureEmailIsVerified::class,
+            'can.analyze' => \App\Http\Middleware\EnsureUserCanAnalyze::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

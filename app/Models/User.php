@@ -63,6 +63,26 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->socialAccounts()->where('provider', $provider)->exists();
     }
 
+    public function subscriptions(): HasMany
+    {
+        return $this->hasMany(Subscription::class);
+    }
+
+    public function activeSubscription()
+    {
+        return $this->hasOne(Subscription::class)
+            ->where('status', 'active')
+            ->where(function ($query) {
+                $query->whereNull('ends_at')->orWhere('ends_at', '>', now());
+            })
+            ->latestOfMany();
+    }
+
+    public function analyses(): HasMany
+    {
+        return $this->hasMany(Analysis::class);
+    }
+
     /**
      * Send the email verification notification.
      */

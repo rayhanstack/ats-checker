@@ -1,8 +1,9 @@
 import React from 'react';
-import { Head } from '@inertiajs/react';
+import { Head, usePage } from '@inertiajs/react';
 import UserLayout from '@/Layouts/UserLayout';
 import { Card, Badge, Button } from '@/Components/UI';
 import { UploadCloud, FileText, Sparkles, CheckCircle2 } from 'lucide-react';
+import { PageProps } from '@/types';
 
 interface AnalyzeProps {
     uploadConfig?: {
@@ -13,6 +14,7 @@ interface AnalyzeProps {
 }
 
 export default function Analyze({ uploadConfig }: AnalyzeProps) {
+    const { auth } = usePage<PageProps>().props;
     const maxMb = uploadConfig?.maxUploadMb ?? 5;
     const fileTypes = uploadConfig?.allowedFileTypes ?? 'pdf,docx';
 
@@ -31,9 +33,17 @@ export default function Analyze({ uploadConfig }: AnalyzeProps) {
                             Upload your resume and paste a target job description to generate your AI ATS score and actionable fixes.
                         </p>
                     </div>
-                    <Badge variant="success" dot size="sm">
-                        Trial Active
-                    </Badge>
+                    {auth.access && (
+                        <Badge
+                            variant={auth.access.status === 'active' ? 'success' : 'primary'}
+                            dot
+                            size="sm"
+                        >
+                            {auth.access.remaining_analyses === 'Unlimited'
+                                ? 'Unlimited Scans'
+                                : `${auth.access.remaining_analyses} Scans Remaining`}
+                        </Badge>
+                    )}
                 </div>
 
                 {/* Upload Sandbox Card */}

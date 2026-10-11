@@ -49,6 +49,7 @@ class HandleInertiaRequests extends Middleware
                     'has_active_trial' => $user->hasActiveTrial(),
                     'email_verified_at' => $user->email_verified_at?->toISOString(),
                 ] : null,
+                'access' => $user ? app(\App\Services\AccessService::class)->getAccessSummary($user) : null,
             ],
             'features' => [
                 'google_login_enabled' => (bool) (SettingsService::get('google_login_enabled', true)
