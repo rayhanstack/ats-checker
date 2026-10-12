@@ -47,6 +47,30 @@ export default function AdminLayout({
             active: route().current('admin.users.*'),
         },
         {
+            label: 'CV Analyses',
+            href: route('admin.analyses.index'),
+            icon: FileCheck2,
+            active: route().current('admin.analyses.*'),
+        },
+        {
+            label: 'Plans',
+            href: route('admin.plans.index'),
+            icon: CreditCard,
+            active: route().current('admin.plans.*'),
+        },
+        {
+            label: 'Subscriptions',
+            href: route('admin.subscriptions.index'),
+            icon: Shield,
+            active: route().current('admin.subscriptions.*'),
+        },
+        {
+            label: 'Payments',
+            href: route('admin.payments.index'),
+            icon: CreditCard,
+            active: route().current('admin.payments.*'),
+        },
+        {
             label: 'Audit Logs',
             href: route('admin.audit-logs.index'),
             icon: Shield,

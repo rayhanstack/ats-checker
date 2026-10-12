@@ -20,7 +20,7 @@ return new class extends Migration
             $table->enum('status', ['pending', 'paid', 'failed', 'refunded'])->default('pending');
             $table->string('gateway')->default('manual');
             $table->string('gateway_payment_id')->nullable();
-            $table->string('invoice_number')->unique();
+            $table->string('invoice_number')->nullable()->unique();
             $table->timestamp('paid_at')->nullable();
             $table->json('meta')->nullable();
             $table->timestamps();

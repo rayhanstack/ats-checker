@@ -102,6 +102,29 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::post('/users/{user}/reset-password', [\App\Http\Controllers\Admin\UserController::class, 'resetPassword'])->name('users.reset-password');
     Route::delete('/users/{user}', [\App\Http\Controllers\Admin\UserController::class, 'destroy'])->name('users.destroy');
 
+    // CV & Analysis Tracking
+    Route::get('/analyses', [\App\Http\Controllers\Admin\AnalysisController::class, 'index'])->name('analyses.index');
+    Route::get('/analyses/export-csv', [\App\Http\Controllers\Admin\AnalysisController::class, 'exportCsv'])->name('analyses.export-csv');
+    Route::get('/analyses/{analysis}/download-cv', [\App\Http\Controllers\Admin\AnalysisController::class, 'downloadCv'])->name('analyses.download-cv');
+    Route::post('/analyses/{analysis}/rerun', [\App\Http\Controllers\Admin\AnalysisController::class, 'rerun'])->name('analyses.rerun');
+    Route::delete('/analyses/{analysis}', [\App\Http\Controllers\Admin\AnalysisController::class, 'destroy'])->name('analyses.destroy');
+
+    // Plans Management
+    Route::get('/plans', [\App\Http\Controllers\Admin\PlanController::class, 'index'])->name('plans.index');
+    Route::post('/plans', [\App\Http\Controllers\Admin\PlanController::class, 'store'])->name('plans.store');
+    Route::put('/plans/{plan}', [\App\Http\Controllers\Admin\PlanController::class, 'update'])->name('plans.update');
+    Route::delete('/plans/{plan}', [\App\Http\Controllers\Admin\PlanController::class, 'destroy'])->name('plans.destroy');
+
+    // Subscriptions Management
+    Route::get('/subscriptions', [\App\Http\Controllers\Admin\SubscriptionController::class, 'index'])->name('subscriptions.index');
+    Route::put('/subscriptions/{subscription}', [\App\Http\Controllers\Admin\SubscriptionController::class, 'updateStatus'])->name('subscriptions.update');
+    Route::post('/subscriptions/{subscription}/cancel', [\App\Http\Controllers\Admin\SubscriptionController::class, 'cancel'])->name('subscriptions.cancel');
+
+    // Payments & Invoices
+    Route::get('/payments', [\App\Http\Controllers\Admin\PaymentController::class, 'index'])->name('payments.index');
+    Route::post('/payments/{payment}/mark-paid', [\App\Http\Controllers\Admin\PaymentController::class, 'markPaid'])->name('payments.mark-paid');
+    Route::post('/payments/{payment}/refund', [\App\Http\Controllers\Admin\PaymentController::class, 'refund'])->name('payments.refund');
+
     // Audit Logs
     Route::get('/audit-logs', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
 });
