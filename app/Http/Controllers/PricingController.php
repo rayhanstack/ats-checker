@@ -17,25 +17,28 @@ class PricingController extends Controller
     {
         $user = $request->user();
 
-        $plans = Plan::query()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get()
-            ->map(fn (Plan $plan) => [
-                'id' => (string) $plan->id,
-                'name' => $plan->name,
-                'slug' => $plan->slug,
-                'price' => (float) $plan->price,
-                'formatted_price' => $plan->formatted_price,
-                'currency' => $plan->currency,
-                'billing_interval' => $plan->billing_interval,
-                'analyses_limit' => $plan->analyses_limit,
-                'limit_period' => $plan->limit_period,
-                'description' => $plan->description ?? '',
-                'features' => $plan->features ?? [],
-                'is_featured' => (bool) $plan->is_featured,
-                'is_unlimited' => $plan->isUnlimited(),
-            ]);
+        $plans = \Illuminate\Support\Facades\Cache::remember('pricing:plans', 3600, function () {
+            return Plan::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get()
+                ->map(fn (Plan $plan) => [
+                    'id' => (string) $plan->id,
+                    'name' => $plan->name,
+                    'slug' => $plan->slug,
+                    'price' => (float) $plan->price,
+                    'formatted_price' => $plan->formatted_price,
+                    'currency' => $plan->currency,
+                    'billing_interval' => $plan->billing_interval,
+                    'analyses_limit' => $plan->analyses_limit,
+                    'limit_period' => $plan->limit_period,
+                    'description' => $plan->description ?? '',
+                    'features' => $plan->features ?? [],
+                    'is_featured' => (bool) $plan->is_featured,
+                    'is_unlimited' => $plan->isUnlimited(),
+                ])
+                ->all();
+        });
 
         $currentPlan = $user ? $accessService->currentPlan($user) : null;
 

@@ -101,7 +101,19 @@ class ProcessAnalysisJob implements ShouldQueue
 
             Log::info("ProcessAnalysisJob successfully completed for Analysis ID {$this->analysis->id}");
         } catch (Throwable $e) {
-            Log::error("ProcessAnalysisJob error on attempt #{$this->attempts()} for Analysis ID {$this->analysis->id}: " . $e->getMessage());
+            Log::error("ProcessAnalysisJob error on attempt #{$this->attempts()} for Analysis ID {$this->analysis->id}", [
+                'analysis_id' => $this->analysis->id,
+                'user_id' => $this->analysis->user_id,
+                'attempt' => $this->attempts(),
+                'max_tries' => $this->tries,
+                'exception_class' => get_class($e),
+                'exception_message' => $e->getMessage(),
+            ]);
+
+            // Optional Sentry hook
+            if (app()->bound('sentry')) {
+                app('sentry')->captureException($e);
+            }
 
             // Layer 7: Delayed recovery or Final Failure
             if ($this->attempts() >= $this->tries) {
@@ -124,6 +136,30 @@ class ProcessAnalysisJob implements ShouldQueue
 
             $delaySeconds = $this->backoff()[$this->attempts() - 1] ?? 60;
             $this->release($delaySeconds);
+        }
+    }
+
+    /**
+     * Handle permanent job failure.
+     */
+    public function failed(?Throwable $exception): void
+    {
+        Log::error("ProcessAnalysisJob permanently failed for Analysis ID {$this->analysis->id}", [
+            'analysis_id' => $this->analysis->id,
+            'user_id' => $this->analysis->user_id,
+            'exception_class' => $exception ? get_class($exception) : null,
+            'exception_message' => $exception?->getMessage(),
+        ]);
+
+        Analysis::query()->where('id', $this->analysis->id)->update([
+            'status' => 'failed',
+            'is_delayed' => false,
+            'error_message' => 'Our AI analysis system is temporarily experiencing heavy load. Please try submitting again.',
+            'completed_at' => now(),
+        ]);
+
+        if (app()->bound('sentry') && $exception) {
+            app('sentry')->captureException($exception);
         }
     }
 }

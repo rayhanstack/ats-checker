@@ -21,6 +21,7 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         $middleware->web(append: [
+            \App\Http\Middleware\SecurityHeaders::class,
             \App\Http\Middleware\HandleInertiaRequests::class,
             \Illuminate\Http\Middleware\AddLinkHeadersForPreloadedAssets::class,
             \App\Http\Middleware\EnsureUserIsActive::class,
@@ -36,4 +37,10 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        if (app()->bound('sentry')) {
+            $exceptions->reportable(function (\Throwable $e) {
+                app('sentry')->captureException($e);
+            });
+        }
     })->create();

@@ -127,6 +127,37 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     // Audit Logs
     Route::get('/audit-logs', [\App\Http\Controllers\Admin\AuditLogController::class, 'index'])->name('audit-logs.index');
+
+    // AI Models Management
+    Route::get('/ai-models', [\App\Http\Controllers\Admin\AiModelController::class, 'index'])->name('ai-models.index');
+    Route::post('/ai-models', [\App\Http\Controllers\Admin\AiModelController::class, 'store'])->name('ai-models.store');
+    Route::put('/ai-models/{ai_model}', [\App\Http\Controllers\Admin\AiModelController::class, 'update'])->name('ai-models.update');
+    Route::post('/ai-models/{ai_model}/toggle-active', [\App\Http\Controllers\Admin\AiModelController::class, 'toggleActive'])->name('ai-models.toggle-active');
+    Route::post('/ai-models/{ai_model}/set-default', [\App\Http\Controllers\Admin\AiModelController::class, 'setDefault'])->name('ai-models.set-default');
+    Route::post('/ai-models/{ai_model}/test', [\App\Http\Controllers\Admin\AiModelController::class, 'testModel'])->name('ai-models.test');
+    Route::delete('/ai-models/{ai_model}', [\App\Http\Controllers\Admin\AiModelController::class, 'destroy'])->name('ai-models.destroy');
+
+    // System Settings
+    Route::get('/settings', [\App\Http\Controllers\Admin\SettingController::class, 'index'])->name('settings.index');
+    Route::put('/settings', [\App\Http\Controllers\Admin\SettingController::class, 'update'])->name('settings.update');
+    Route::post('/settings/test-mail', [\App\Http\Controllers\Admin\SettingController::class, 'sendTestEmail'])->name('settings.test-mail');
+    Route::post('/settings/testimonials', [\App\Http\Controllers\Admin\SettingController::class, 'storeTestimonial'])->name('settings.testimonials.store');
+    Route::put('/settings/testimonials/{testimonial}', [\App\Http\Controllers\Admin\SettingController::class, 'updateTestimonial'])->name('settings.testimonials.update');
+    Route::delete('/settings/testimonials/{testimonial}', [\App\Http\Controllers\Admin\SettingController::class, 'destroyTestimonial'])->name('settings.testimonials.destroy');
+
+    // FAQs Management
+    Route::get('/faqs', [\App\Http\Controllers\Admin\FaqController::class, 'index'])->name('faqs.index');
+    Route::post('/faqs', [\App\Http\Controllers\Admin\FaqController::class, 'store'])->name('faqs.store');
+    Route::put('/faqs/{faq}', [\App\Http\Controllers\Admin\FaqController::class, 'update'])->name('faqs.update');
+    Route::post('/faqs/reorder', [\App\Http\Controllers\Admin\FaqController::class, 'reorder'])->name('faqs.reorder');
+    Route::post('/faqs/{faq}/toggle-publish', [\App\Http\Controllers\Admin\FaqController::class, 'togglePublish'])->name('faqs.toggle-publish');
+    Route::delete('/faqs/{faq}', [\App\Http\Controllers\Admin\FaqController::class, 'destroy'])->name('faqs.destroy');
+
+    // Contact Messages Inbox
+    Route::get('/contact-messages', [\App\Http\Controllers\Admin\ContactMessageController::class, 'index'])->name('contact-messages.index');
+    Route::post('/contact-messages/{contact_message}/mark-read', [\App\Http\Controllers\Admin\ContactMessageController::class, 'markRead'])->name('contact-messages.mark-read');
+    Route::post('/contact-messages/{contact_message}/mark-replied', [\App\Http\Controllers\Admin\ContactMessageController::class, 'markReplied'])->name('contact-messages.mark-replied');
+    Route::delete('/contact-messages/{contact_message}', [\App\Http\Controllers\Admin\ContactMessageController::class, 'destroy'])->name('contact-messages.destroy');
 });
 
 require __DIR__.'/auth.php';

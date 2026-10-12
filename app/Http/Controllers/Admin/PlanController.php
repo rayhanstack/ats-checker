@@ -74,6 +74,7 @@ class PlanController extends Controller
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
 
         $plan = Plan::create($validated);
+        \Illuminate\Support\Facades\Cache::forget('pricing:plans');
 
         AuditLogger::log('plan.create', $plan, [
             'name' => $plan->name,
@@ -109,6 +110,7 @@ class PlanController extends Controller
         $validated['is_featured'] = $request->boolean('is_featured', false);
 
         $plan->update($validated);
+        \Illuminate\Support\Facades\Cache::forget('pricing:plans');
 
         AuditLogger::log('plan.update', $plan, [
             'name' => $plan->name,
@@ -136,6 +138,7 @@ class PlanController extends Controller
         ]);
 
         $plan->delete();
+        \Illuminate\Support\Facades\Cache::forget('pricing:plans');
 
         return back()->with('success', "Plan '{$plan->name}' has been deleted.");
     }

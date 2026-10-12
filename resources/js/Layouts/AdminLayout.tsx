@@ -15,6 +15,9 @@ import {
     X,
     ExternalLink,
     ChevronRight,
+    Cpu,
+    HelpCircle,
+    Mail,
 } from 'lucide-react';
 
 interface AdminLayoutProps {
@@ -69,6 +72,30 @@ export default function AdminLayout({
             href: route('admin.payments.index'),
             icon: CreditCard,
             active: route().current('admin.payments.*'),
+        },
+        {
+            label: 'AI Models',
+            href: route('admin.ai-models.index'),
+            icon: Cpu,
+            active: route().current('admin.ai-models.*'),
+        },
+        {
+            label: 'FAQs',
+            href: route('admin.faqs.index'),
+            icon: HelpCircle,
+            active: route().current('admin.faqs.*'),
+        },
+        {
+            label: 'Contact Messages',
+            href: route('admin.contact-messages.index'),
+            icon: Mail,
+            active: route().current('admin.contact-messages.*'),
+        },
+        {
+            label: 'Settings',
+            href: route('admin.settings.index'),
+            icon: Settings,
+            active: route().current('admin.settings.*'),
         },
         {
             label: 'Audit Logs',

@@ -8,4 +8,5 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 \Illuminate\Support\Facades\Schedule::command('subscriptions:expire')->daily();
+\Illuminate\Support\Facades\Schedule::command('resumes:purge-expired')->daily();
 

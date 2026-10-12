@@ -15,15 +15,19 @@ class HomeController extends Controller
      */
     public function index(): Response
     {
-        $faqs = Faq::query()
-            ->where('is_published', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'question', 'answer']);
+        $faqs = \Illuminate\Support\Facades\Cache::remember('home:faqs', 3600, function () {
+            return Faq::query()
+                ->where('is_published', true)
+                ->orderBy('sort_order')
+                ->get(['id', 'question', 'answer']);
+        });
 
-        $testimonials = Testimonial::query()
-            ->where('is_active', true)
-            ->orderBy('sort_order')
-            ->get(['id', 'name', 'role', 'company', 'content', 'rating', 'avatar_url']);
+        $testimonials = \Illuminate\Support\Facades\Cache::remember('home:testimonials', 3600, function () {
+            return Testimonial::query()
+                ->where('is_active', true)
+                ->orderBy('sort_order')
+                ->get(['id', 'name', 'role', 'company', 'content', 'rating', 'avatar_url']);
+        });
 
         // Database-driven plans will be introduced in Phase 8; providing structured pricing models here
         $plans = [

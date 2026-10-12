@@ -15,11 +15,11 @@ return new class extends Migration
             $table->id();
             $table->foreignId('user_id')->constrained()->cascadeOnDelete();
             $table->string('resume_original_name');
-            $table->string('resume_path');
+            $table->string('resume_path')->nullable();
             $table->longText('resume_text')->nullable();
             $table->string('job_title')->nullable();
             $table->string('job_company')->nullable();
-            $table->longText('jd_text');
+            $table->longText('jd_text')->nullable();
             $table->string('status')->default('queued'); // 'queued', 'processing', 'completed', 'failed'
             $table->unsignedTinyInteger('score')->nullable();
             $table->json('result')->nullable();
@@ -34,6 +34,9 @@ return new class extends Migration
 
             $table->index(['user_id', 'created_at']);
             $table->index(['user_id', 'status']);
+            $table->index('status');
+            $table->index('created_at');
+            $table->index('score');
         });
     }
 
